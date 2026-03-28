@@ -1,0 +1,7 @@
+tipo_item,chave,resumo,responsavel,relator,prioridade,status,resolucao,criado,atualizado,data_limite,justificativa,criador,descricao,flag_especial,parent,classificacao,entidade_id,flag_grupo,tipo_evento,tipo_entidade,issue_id
+ITEM_PRINCIPAL,,Cliente A,Analista 1,Analista 1,Medium,PENDING,,01/03/2026,01/03/2026,15/04/2026,,Sistema,,YES,,HIGH,12345678900,NO,GENERIC_EVENT,GENERIC_ENTITY,
+SUBITEM,,Transação acima do padrão,Analista 1,Analista 1,Medium,PENDING,,01/03/2026,01/03/2026,15/04/2026,,Sistema,,YES,Cliente A,HIGH,12345678900,NO,GENERIC_EVENT,GENERIC_ENTITY,
+SUBITEM,,Volume atípico mensal,Analista 1,Analista 1,Medium,PENDING,,01/03/2026,01/03/2026,15/04/2026,,Sistema,,YES,Cliente A,HIGH,12345678900,NO,GENERIC_EVENT,GENERIC_ENTITY,
+
+ITEM_PRINCIPAL,,Cliente B,Analista 2,Analista 2,Medium,PENDING,,01/03/2026,01/03/2026,15/04/2026,,Sistema,,NO,,LOW,98765432100,YES,GENERIC_EVENT,GENERIC_ENTITY,
+SUBITEM,,Frequência incomum de eventos,Analista 2,Analista 2,Medium,PENDING,,01/03/2026,01/03/2026,15/04/2026,,Sistema,,YES,Cliente B,LOW,98765432100,YES,GENERIC_EVENT,GENERIC_ENTITY,
