@@ -1,0 +1,138 @@
+WITH entidade_flag AS (
+    SELECT entity_id
+    FROM entity_registry
+    WHERE flag_type = 'special_group'
+),
+
+classificacao AS (
+    SELECT 
+        e.entity_id,
+        c.level AS classification
+    FROM entity e
+    JOIN classification_history c ON c.entity_id = e.entity_id
+    QUALIFY ROW_NUMBER() OVER (
+        PARTITION BY e.entity_id 
+        ORDER BY c.version DESC
+    ) = 1
+),
+
+ultima_data_evento AS (
+    SELECT MAX(event_date) AS dt_ref
+    FROM events
+),
+
+eventos_recentes AS (
+    SELECT 
+        event_name,
+        event_date,
+        entity_id,
+        event_metadata['entity_name'] AS entity_name
+    FROM events
+    WHERE event_date = (SELECT dt_ref FROM ultima_data_evento)
+),
+
+historico_eventos AS (
+    SELECT DISTINCT entity_id
+    FROM events
+    WHERE event_date != (SELECT dt_ref FROM ultima_data_evento)
+),
+
+entidades AS (
+    SELECT 
+        entity_id,
+        MAX(entity_name) AS entity_name,
+        MAX(event_date) AS event_date
+    FROM eventos_recentes
+    GROUP BY entity_id
+),
+
+itens AS (
+    -- Item principal
+    SELECT 
+        'ITEM_PRINCIPAL' AS item_type,
+        e.entity_id,
+        e.entity_name AS summary,
+        e.entity_name AS sort_key,
+        e.event_date,
+        0 AS sort_order,
+        CAST(NULL AS STRING) AS original_event
+    FROM entidades e
+
+    UNION ALL
+
+    -- Subitens
+    SELECT 
+        'SUBITEM' AS item_type,
+        ev.entity_id,
+        ev.event_name AS summary,
+        e.entity_name AS sort_key,
+        ev.event_date,
+        ROW_NUMBER() OVER (
+            PARTITION BY ev.entity_id 
+            ORDER BY ev.event_name
+        ) AS sort_order,
+        ev.event_name AS original_event
+    FROM eventos_recentes ev
+    JOIN entidades e ON e.entity_id = ev.entity_id
+),
+
+ordenado AS (
+    SELECT 
+        *,
+        ROW_NUMBER() OVER (
+            ORDER BY sort_key, sort_order
+        ) AS rn
+    FROM itens
+),
+
+parent_map AS (
+    SELECT entity_id, summary AS parent_summary
+    FROM ordenado
+    WHERE item_type = 'ITEM_PRINCIPAL'
+)
+
+SELECT 
+    o.item_type                     AS tipo_item,
+    NULL                            AS chave,
+    o.summary                       AS resumo,
+    'Responsavel Padrao'           AS responsavel,
+    'Responsavel Padrao'           AS relator,
+    'Medium'                       AS prioridade,
+    'PENDING'                      AS status,
+    NULL                            AS resolucao,
+    DATE_FORMAT(o.event_date,'dd/MM/yyyy') AS criado,
+    DATE_FORMAT(o.event_date,'dd/MM/yyyy') AS atualizado,
+    DATE_FORMAT(DATE_ADD(o.event_date,30),'dd/MM/yyyy') AS data_limite,
+    NULL                            AS justificativa,
+    'Sistema'                      AS criador,
+    NULL                            AS descricao,
+
+    CASE 
+        WHEN c.classification IN ('HIGH','CRITICAL') THEN 'YES'
+        WHEN h.entity_id IS NOT NULL THEN 'YES'
+        ELSE 'NO'
+    END                             AS flag_especial,
+
+    CASE 
+        WHEN o.item_type = 'SUBITEM'
+        THEN p.parent_summary
+    END                             AS parent,
+
+    c.classification                AS classificacao,
+    o.entity_id                     AS entidade_id,
+
+    CASE 
+        WHEN f.entity_id IS NOT NULL THEN 'YES'
+        ELSE 'NO'
+    END                             AS flag_grupo,
+
+    'GENERIC_EVENT'                 AS tipo_evento,
+    'GENERIC_ENTITY'                AS tipo_entidade,
+    NULL                            AS issue_id
+
+FROM ordenado o
+LEFT JOIN parent_map p ON p.entity_id = o.entity_id
+LEFT JOIN entidade_flag f ON f.entity_id = o.entity_id
+LEFT JOIN classificacao c ON c.entity_id = o.entity_id
+LEFT JOIN historico_eventos h ON h.entity_id = o.entity_id
+ORDER BY o.rn;
