@@ -97,6 +97,83 @@ data_sample/    → Exemplo de saída
 
 ---
 
+## 🧩 Arquitetura do fluxo
+
+```mermaid id="flow1"
+flowchart LR
+
+A[Eventos brutos<br>Data Platform] --> B[SQL<br>Estruturação]
+B --> C[Google Sheets<br>Revisão opcional]
+C --> D[Apps Script<br>Integração]
+D --> E[API externa<br>Workflow / Tickets]
+
+E --> F[Itens criados<br>com hierarquia]
+```
+
+---
+
+## 🔍 Descrição
+
+* **Data Platform:** detecta eventos relevantes
+* **SQL:** organiza e enriquece os dados
+* **Sheets:** permite controle operacional
+* **Apps Script:** executa integração com API
+* **Sistema final:** recebe itens estruturados e acionáveis
+
+---
+
+## 🔄 Input vs Output
+
+### Entrada (camada analítica)
+
+Eventos brutos detectados na base:
+
+```id="inp1"
+entity_id,event_name,event_date,classification
+123,Transação acima do padrão,2026-03-01,HIGH
+123,Volume atípico mensal,2026-03-01,HIGH
+456,Frequência incomum,2026-03-01,LOW
+```
+
+---
+
+### Saída (estrutura operacional)
+
+Dados estruturados para integração com sistemas de workflow:
+
+```id="out1"
+tipo_item,resumo,parent,classificacao,flag_especial
+ITEM_PRINCIPAL,Cliente 123,,HIGH,YES
+SUBITEM,Transação acima do padrão,Cliente 123,HIGH,YES
+SUBITEM,Volume atípico mensal,Cliente 123,HIGH,YES
+
+ITEM_PRINCIPAL,Cliente 456,,LOW,NO
+SUBITEM,Frequência incomum,Cliente 456,LOW,YES
+```
+
+---
+
+## 🧠 O que acontece na transformação
+
+* Eventos são **agrupados por entidade**
+* Um **item principal** é criado para cada entidade
+* Cada evento vira um **subitem**
+* Flags e classificações são **derivadas automaticamente**
+* A hierarquia é construída via campo `parent`
+
+---
+
+## 🎯 Resultado
+
+Uma estrutura pronta para:
+
+* Criação automática de tarefas
+* Organização hierárquica (pai/filho)
+* Priorização baseada em dados
+* Rastreabilidade completa
+
+---
+
 ## ⚠️ Observações
 
 * Adaptável para qualquer sistema com API (Jira, ServiceNow, etc.)
